@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+
+  jira:
+    depends_on:
+      - db
+    image: alexeydorofeyev/jira:8.21.1-arm64
+    networks:
+      - jiranet 
+    volumes:
+      # Jira home directory fom the container will be mounted to ./jira-home
+      - ./jira-home:/var/atlassian/application-data/jira
+    ports:
+      - 2990:8080
+    environment:
+      - JVM_MINIMUM_MEMORY=3072m
+      - JVM_MAXIMUM_MEMORY=3072m
+      # Remote JVM debug
+      - JVM_SUPPORT_RECOMMENDED_ARGS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000
+      # Nonempty context path for testing purpose
+      - ATL_TOMCAT_CONTEXTPATH=/jira
+    container_name: jira
+
+  db:
+    # Compatibility with Jira 7.13.0.
+    image: postgres:9.6
+    platform: linux/arm64/v8
+    restart: always
+    networks:
+      - jiranet 
+    volumes:
+      # Data directory from container will be mounted to ./db
+      - ./db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: jira
+      POSTGRES_PASSWORD: jira
+      POSTGRES_DB: jira
+      POSTGRES_ENCODING: UTF8
+      POSTGRES_COLLATE: C
+      POSTGRES_COLLATE_TYPE: C
+    container_name: jira-db
+
+networks:
+  jiranet:
+    driver: bridge
